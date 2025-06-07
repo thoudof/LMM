@@ -44,15 +44,22 @@ const TripEditScreen = () => {
   
   const handleSubmit = async (updatedTrip: Trip) => {
     try {
+      // Ensure income and expenses are numbers
+      const tripToSave = {
+        ...updatedTrip,
+        income: typeof updatedTrip.income === 'number' ? updatedTrip.income : 0,
+        expenses: typeof updatedTrip.expenses === 'number' ? updatedTrip.expenses : 0
+      };
+      
       if (isNewTrip) {
-        const newTrip = await addTrip(updatedTrip);
+        const newTrip = await addTrip(tripToSave);
         if (newTrip && newTrip.id) {
           navigation.navigate('TripDetails' as never, { tripId: newTrip.id } as never);
         } else {
           navigation.goBack();
         }
       } else if (trip && trip.id) {
-        const result = await updateTrip(trip.id, updatedTrip, trip);
+        const result = await updateTrip(trip.id, tripToSave, trip);
         if (result) {
           navigation.navigate('TripDetails' as never, { tripId: trip.id } as never);
         } else {

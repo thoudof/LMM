@@ -41,6 +41,16 @@ const TripForm: React.FC<TripFormProps> = ({
   const [trip, setTrip] = useState<Trip>(initialValues);
   const [errors, setErrors] = useState<Partial<Record<keyof Trip, string>>>({});
   
+  // Ensure income and expenses are numbers
+  useEffect(() => {
+    // Make sure income and expenses are numbers
+    setTrip(prev => ({
+      ...prev,
+      income: typeof prev.income === 'number' ? prev.income : 0,
+      expenses: typeof prev.expenses === 'number' ? prev.expenses : 0
+    }));
+  }, []);
+  
   // Dropdown state
   const [openClientDropdown, setOpenClientDropdown] = useState(false);
   const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
@@ -213,7 +223,7 @@ const TripForm: React.FC<TripFormProps> = ({
       
       <TextInput
         label="Доход (₽) *"
-        value={trip.income.toString()}
+        value={typeof trip.income === 'number' ? trip.income.toString() : '0'}
         onChangeText={(value) => handleChange('income', parseFloat(value) || 0)}
         style={styles.input}
         keyboardType="numeric"
@@ -223,7 +233,7 @@ const TripForm: React.FC<TripFormProps> = ({
       
       <TextInput
         label="Расходы (₽) *"
-        value={trip.expenses.toString()}
+        value={typeof trip.expenses === 'number' ? trip.expenses.toString() : '0'}
         onChangeText={(value) => handleChange('expenses', parseFloat(value) || 0)}
         style={styles.input}
         keyboardType="numeric"
