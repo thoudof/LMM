@@ -30,15 +30,17 @@ interface DatabaseContextType {
   addDocument: (document: Document) => Promise<Document | null>;
   deleteDocument: (id: string) => Promise<boolean>;
   
-  // Loading state
+  // Auth and Loading state
   isLoading: boolean;
+  isSignedIn: boolean;
   refreshData: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined);
 
 export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { db, isLoading: basicLoading } = useBasic<AppSchema>();
+  const { db, isLoading: basicLoading, isSignedIn, signout } = useBasic<AppSchema>();
   const [clients, setClients] = useState<Client[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
@@ -46,7 +48,7 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
   
   // Load initial data
   const loadData = async () => {
-    if (!db) return;
+    if (!db || !isSignedIn) return;
     
     setIsLoading(true);
     try {
@@ -65,14 +67,20 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
   
   useEffect(() => {
-    if (db && !basicLoading) {
+    if (db && isSignedIn && !basicLoading) {
       loadData();
+    } else if (!isSignedIn) {
+      // Reset data when signed out
+      setClients([]);
+      setTrips([]);
+      setFilteredTrips([]);
+      setIsLoading(false);
     }
-  }, [db, basicLoading]);
+  }, [db, isSignedIn, basicLoading]);
   
   // Client operations
   const getClient = async (id: string): Promise<Client | null> => {
-    if (!db) return null;
+    if (!db || !isSignedIn) return null;
     
     try {
       return await db.from('clients').get(id);
@@ -83,7 +91,7 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
   
   const addClient = async (client: Client): Promise<Client | null> => {
-    if (!db) return null;
+    if (!db || !isSignedIn) return null;
     
     try {
       const newClient = await db.from('clients').add(client);
@@ -333,6 +341,16 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
     await loadData();
   };
   
+  const signOut = async () => {
+    try {
+      await signout();
+      // Data will be reset in the useEffect when isSignedIn changes
+    } catch (error) {
+      console.error('Error signing out:', error);
+      Alert.alert('Ошибка', 'Не удалось выйти из системы');
+    }
+  };
+  
   const value = {
     clients,
     getClient,
@@ -356,7 +374,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
     deleteDocument,
     
     isLoading,
-    refreshData
+    isSignedIn,
+    refreshData,
+    signOut
   };
   
   return (

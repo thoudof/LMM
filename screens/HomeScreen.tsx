@@ -6,10 +6,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDatabase } from '../context/DatabaseContext';
 import { Trip, Client } from '../types';
 import { formatDate } from '../utils/dateUtils';
+import { useBasic } from '@basictech/expo';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const { trips, clients, isLoading, refreshData } = useDatabase();
+  const { signout } = useBasic();
   const [refreshing, setRefreshing] = useState(false);
   
   // Get recent trips (last 5)
@@ -39,6 +41,14 @@ const HomeScreen = () => {
     setRefreshing(false);
   };
   
+  const handleSignOut = async () => {
+    try {
+      await signout();
+    } catch (error) {
+      console.error('Ошибка при выходе из системы:', error);
+    }
+  };
+  
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -55,6 +65,17 @@ const HomeScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+      {/* Add sign out button at the top */}
+      <View style={styles.signOutContainer}>
+        <Button 
+          mode="text" 
+          icon="logout" 
+          onPress={handleSignOut}
+        >
+          Выйти
+        </Button>
+      </View>
+      
       <Card style={styles.card}>
         <Card.Content>
           <Text variant="titleLarge" style={styles.cardTitle}>Статистика рейсов</Text>
@@ -261,6 +282,11 @@ const styles = StyleSheet.create({
   },
   clientCountLabel: {
     textAlign: 'center',
+  },
+  signOutContainer: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
 });
 
