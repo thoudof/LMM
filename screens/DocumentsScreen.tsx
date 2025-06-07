@@ -111,6 +111,10 @@ const DocumentsScreen = () => {
   
   const handleOpenDocument = async (document: Document) => {
     try {
+      if (!document.uri) {
+        Alert.alert('Ошибка', 'Путь к документу не найден');
+        return;
+      }
       await openDocument(document.uri);
     } catch (error) {
       console.error('Error opening document:', error);
@@ -123,7 +127,7 @@ const DocumentsScreen = () => {
     
     Alert.alert(
       'Удаление документа',
-      `Вы уверены, что хотите удалить документ "${document.name}"?`,
+      `Вы уверены, что хотите удалить документ "${document.name || 'Без названия'}"?`,
       [
         { text: 'Отмена', style: 'cancel' },
         { 
@@ -132,7 +136,9 @@ const DocumentsScreen = () => {
           onPress: async () => {
             try {
               // Delete from storage
-              await deleteDocument(document.uri);
+              if (document.uri) {
+                await deleteDocument(document.uri);
+              }
               
               // Delete from database
               const success = await deleteDocumentFromDb(document.id!);
@@ -170,7 +176,7 @@ const DocumentsScreen = () => {
     <View style={styles.container}>
       <FlatList
         data={documents}
-        keyExtractor={(item) => item.id || item.uri}
+        keyExtractor={(item) => item.id || item.uri || Math.random().toString()}
         renderItem={({ item }) => (
           <DocumentItem
             document={item}

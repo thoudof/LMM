@@ -134,7 +134,10 @@ const TripDetailsScreen = () => {
     );
   }
   
-  const profit = trip.income - trip.expenses;
+  // Ensure income and expenses are numbers with default values
+  const income = typeof trip.income === 'number' ? trip.income : 0;
+  const expenses = typeof trip.expenses === 'number' ? trip.expenses : 0;
+  const profit = income - expenses;
   
   return (
     <ScrollView style={styles.container}>
@@ -142,7 +145,7 @@ const TripDetailsScreen = () => {
         <Card.Content>
           <View style={styles.header}>
             <Text variant="headlineMedium" style={styles.title}>
-              {trip.startLocation} → {trip.endLocation}
+              {trip.startLocation || 'Не указано'} → {trip.endLocation || 'Не указано'}
             </Text>
             <View style={styles.actions}>
               <IconButton
@@ -160,10 +163,10 @@ const TripDetailsScreen = () => {
           
           <View style={styles.chipRow}>
             <Chip 
-              style={[styles.statusChip, { backgroundColor: getStatusColor(trip.status) }]}
+              style={[styles.statusChip, { backgroundColor: getStatusColor(trip.status || 'planned') }]}
               textStyle={{ color: 'white' }}
             >
-              {getStatusText(trip.status)}
+              {getStatusText(trip.status || 'planned')}
             </Chip>
             <Text variant="bodyLarge">{formatDate(trip.date)}</Text>
           </View>
@@ -178,17 +181,17 @@ const TripDetailsScreen = () => {
             
             <View style={styles.infoRow}>
               <Text variant="bodyMedium" style={styles.label}>Груз:</Text>
-              <Text variant="bodyMedium">{trip.cargo}</Text>
+              <Text variant="bodyMedium">{trip.cargo || 'Не указано'}</Text>
             </View>
             
             <View style={styles.infoRow}>
               <Text variant="bodyMedium" style={styles.label}>Водитель:</Text>
-              <Text variant="bodyMedium">{trip.driver}</Text>
+              <Text variant="bodyMedium">{trip.driver || 'Не указано'}</Text>
             </View>
             
             <View style={styles.infoRow}>
               <Text variant="bodyMedium" style={styles.label}>Транспорт:</Text>
-              <Text variant="bodyMedium">{trip.vehicle}</Text>
+              <Text variant="bodyMedium">{trip.vehicle || 'Не указано'}</Text>
             </View>
             
             {trip.notes && (
@@ -208,14 +211,14 @@ const TripDetailsScreen = () => {
               <View style={styles.financialItem}>
                 <Text variant="bodyMedium">Доход</Text>
                 <Text variant="headlineSmall" style={styles.incomeText}>
-                  {trip.income.toLocaleString()} ₽
+                  {income.toLocaleString()} ₽
                 </Text>
               </View>
               
               <View style={styles.financialItem}>
                 <Text variant="bodyMedium">Расходы</Text>
                 <Text variant="headlineSmall" style={styles.expenseText}>
-                  {trip.expenses.toLocaleString()} ₽
+                  {expenses.toLocaleString()} ₽
                 </Text>
               </View>
               
@@ -277,9 +280,18 @@ const TripDetailsScreen = () => {
             <Text variant="titleMedium" style={styles.sectionTitle}>История изменений</Text>
             
             {history.map((item, index) => {
-              const changedFields = JSON.parse(item.changedFields);
-              const previousValues = JSON.parse(item.previousValues);
-              const newValues = JSON.parse(item.newValues);
+              // Safely parse JSON with error handling
+              let changedFields = [];
+              let previousValues = {};
+              let newValues = {};
+              
+              try {
+                changedFields = JSON.parse(item.changedFields || '[]');
+                previousValues = JSON.parse(item.previousValues || '{}');
+                newValues = JSON.parse(item.newValues || '{}');
+              } catch (error) {
+                console.error('Error parsing history JSON:', error);
+              }
               
               return (
                 <View key={item.id || index} style={styles.historyItem}>
@@ -303,19 +315,19 @@ const TripDetailsScreen = () => {
                          field === 'date' ? 'Дата' : field}:
                       </Text>
                       <Text variant="bodyMedium" style={styles.oldValue}>
-                        {field === 'status' ? getStatusText(previousValues[field]) : 
+                        {field === 'status' ? getStatusText(previousValues[field] || 'planned') : 
                          field === 'date' ? formatDate(previousValues[field]) :
                          (typeof previousValues[field] === 'number' ? 
                           previousValues[field].toLocaleString() + ' ₽' : 
-                          previousValues[field])}
+                          previousValues[field] || 'Не указано')}
                       </Text>
                       <MaterialCommunityIcons name="arrow-right" size={16} color="#757575" />
                       <Text variant="bodyMedium" style={styles.newValue}>
-                        {field === 'status' ? getStatusText(newValues[field]) : 
+                        {field === 'status' ? getStatusText(newValues[field] || 'planned') : 
                          field === 'date' ? formatDate(newValues[field]) :
                          (typeof newValues[field] === 'number' ? 
                           newValues[field].toLocaleString() + ' ₽' : 
-                          newValues[field])}
+                          newValues[field] || 'Не указано')}
                       </Text>
                     </View>
                   ))}

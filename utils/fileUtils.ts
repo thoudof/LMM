@@ -86,6 +86,7 @@ export const getFileExtension = (fileName: string): string => {
   return fileName.slice(((fileName.lastIndexOf('.') - 1) >>> 0) + 2);
 };
 
-export const getFileName = (uri: string): string => {
+export const getFileName = (uri?: string): string => {
+  if (!uri) return 'unknown_file';
   return uri.split('/').pop() || 'unknown_file';
 };

@@ -10,7 +10,7 @@ interface DocumentItemProps {
   onDelete: (document: Document) => void;
 }
 
-const getDocumentIcon = (type: string): string => {
+const getDocumentIcon = (type?: string): string => {
   switch (type) {
     case 'invoice':
       return 'file-document-outline';
@@ -23,7 +23,7 @@ const getDocumentIcon = (type: string): string => {
   }
 };
 
-const getDocumentTypeName = (type: string): string => {
+const getDocumentTypeName = (type?: string): string => {
   switch (type) {
     case 'invoice':
       return 'Счет';
@@ -43,7 +43,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({ document, onOpen, onDelete 
   return (
     <TouchableOpacity onPress={() => onOpen(document)}>
       <List.Item
-        title={document.name}
+        title={document.name || 'Без названия'}
         description={
           <View>
             <Text variant="bodySmall">Тип: {typeName}</Text>
