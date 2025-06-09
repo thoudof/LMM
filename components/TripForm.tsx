@@ -41,13 +41,24 @@ const TripForm: React.FC<TripFormProps> = ({
   const [trip, setTrip] = useState<Trip>(initialValues);
   const [errors, setErrors] = useState<Partial<Record<keyof Trip, string>>>({});
   
-  // Ensure income and expenses are numbers
+  // Ensure all required fields are initialized
   useEffect(() => {
-    // Make sure income and expenses are numbers
     setTrip(prev => ({
-      ...prev,
+      ...defaultTrip, // Start with default values for all fields
+      ...prev, // Override with any existing values
+      // Ensure numeric fields are numbers
       income: typeof prev.income === 'number' ? prev.income : 0,
-      expenses: typeof prev.expenses === 'number' ? prev.expenses : 0
+      expenses: typeof prev.expenses === 'number' ? prev.expenses : 0,
+      // Ensure string fields are strings
+      startLocation: prev.startLocation || '',
+      endLocation: prev.endLocation || '',
+      cargo: prev.cargo || '',
+      driver: prev.driver || '',
+      vehicle: prev.vehicle || '',
+      notes: prev.notes || '',
+      status: prev.status || 'planned',
+      clientId: prev.clientId || '',
+      date: prev.date || new Date().toISOString().split('T')[0]
     }));
   }, []);
   
@@ -75,31 +86,33 @@ const TripForm: React.FC<TripFormProps> = ({
       newErrors.clientId = 'Клиент обязателен';
     }
     
-    if (!trip.startLocation.trim()) {
+    // Safely check string fields with optional chaining
+    if (!trip.startLocation?.trim()) {
       newErrors.startLocation = 'Пункт отправления обязателен';
     }
     
-    if (!trip.endLocation.trim()) {
+    if (!trip.endLocation?.trim()) {
       newErrors.endLocation = 'Пункт назначения обязателен';
     }
     
-    if (!trip.cargo.trim()) {
+    if (!trip.cargo?.trim()) {
       newErrors.cargo = 'Описание груза обязательно';
     }
     
-    if (!trip.driver.trim()) {
+    if (!trip.driver?.trim()) {
       newErrors.driver = 'Водитель обязателен';
     }
     
-    if (!trip.vehicle.trim()) {
+    if (!trip.vehicle?.trim()) {
       newErrors.vehicle = 'Транспортное средство обязательно';
     }
     
-    if (trip.income < 0) {
+    // Check numeric fields
+    if (typeof trip.income !== 'number' || trip.income < 0) {
       newErrors.income = 'Доход не может быть отрицательным';
     }
     
-    if (trip.expenses < 0) {
+    if (typeof trip.expenses !== 'number' || trip.expenses < 0) {
       newErrors.expenses = 'Расходы не могут быть отрицательными';
     }
     

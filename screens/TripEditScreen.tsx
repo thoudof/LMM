@@ -6,6 +6,21 @@ import { useDatabase } from '../context/DatabaseContext';
 import { Trip } from '../types';
 import TripForm from '../components/TripForm';
 
+// Default trip for new trips
+const defaultTrip: Trip = {
+  date: new Date().toISOString().split('T')[0],
+  clientId: '',
+  startLocation: '',
+  endLocation: '',
+  cargo: '',
+  driver: '',
+  vehicle: '',
+  status: 'planned',
+  income: 0,
+  expenses: 0,
+  notes: '',
+};
+
 const TripEditScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -91,7 +106,7 @@ const TripEditScreen = () => {
         {isNewTrip ? 'Новый рейс' : 'Редактирование рейса'}
       </Text>
       <TripForm
-        initialValues={trip || undefined}
+        initialValues={trip || defaultTrip}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
       />
