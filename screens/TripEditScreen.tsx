@@ -106,7 +106,7 @@ const TripEditScreen = () => {
         {isNewTrip ? 'Новый рейс' : 'Редактирование рейса'}
       </Text>
       <TripForm
-        initialValues={trip || defaultTrip}
+        initialValues={trip}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
       />

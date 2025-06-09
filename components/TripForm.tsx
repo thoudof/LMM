@@ -2,27 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { Trip, Client, TripStatus } from '../types';
+import { Trip, TripStatus } from '../types';
 import { useDatabase } from '../context/DatabaseContext';
 
 interface TripFormProps {
-  initialValues?: Trip;
+  initialValues?: Trip | null;
   onSubmit: (trip: Trip) => void;
   onCancel: () => void;
 }
 
-const defaultTrip: Trip = {
-  date: new Date().toISOString().split('T')[0],
-  clientId: '',
-  startLocation: '',
-  endLocation: '',
-  cargo: '',
-  driver: '',
-  vehicle: '',
-  status: 'planned',
-  income: 0,
-  expenses: 0,
-  notes: '',
+// Создаем функцию для получения безопасного начального состояния
+const getSafeInitialState = (initialValues?: Trip | null): Trip => {
+  // Базовые значения по умолчанию
+  const defaultTrip: Trip = {
+    date: new Date().toISOString().split('T')[0],
+    clientId: '',
+    startLocation: '',
+    endLocation: '',
+    cargo: '',
+    driver: '',
+    vehicle: '',
+    status: 'planned',
+    income: 0,
+    expenses: 0,
+    notes: '',
+  };
+
+  // Если initialValues не предоставлены или null, возвращаем defaultTrip
+  if (!initialValues) {
+    return defaultTrip;
+  }
+
+  // Иначе объединяем defaultTrip с initialValues, обеспечивая безопасные значения
+  return {
+    ...defaultTrip,
+    // Сохраняем id, если он есть
+    ...(initialValues.id ? { id: initialValues.id } : {}),
+    // Безопасно копируем строковые поля
+    date: initialValues.date || defaultTrip.date,
+    clientId: initialValues.clientId || defaultTrip.clientId,
+    startLocation: initialValues.startLocation || defaultTrip.startLocation,
+    endLocation: initialValues.endLocation || defaultTrip.endLocation,
+    cargo: initialValues.cargo || defaultTrip.cargo,
+    driver: initialValues.driver || defaultTrip.driver,
+    vehicle: initialValues.vehicle || defaultTrip.vehicle,
+    status: initialValues.status || defaultTrip.status,
+    notes: initialValues.notes || defaultTrip.notes,
+    // Безопасно копируем числовые поля
+    income: typeof initialValues.income === 'number' ? initialValues.income : defaultTrip.income,
+    expenses: typeof initialValues.expenses === 'number' ? initialValues.expenses : defaultTrip.expenses,
+  };
 };
 
 const statusOptions = [
@@ -33,38 +62,24 @@ const statusOptions = [
 ];
 
 const TripForm: React.FC<TripFormProps> = ({ 
-  initialValues = defaultTrip, 
+  initialValues, 
   onSubmit, 
   onCancel 
 }) => {
   const { clients } = useDatabase();
-  const [trip, setTrip] = useState<Trip>(initialValues);
-  const [errors, setErrors] = useState<Partial<Record<keyof Trip, string>>>({});
   
-  // Ensure all required fields are initialized
-  useEffect(() => {
-    setTrip(prev => ({
-      ...defaultTrip, // Start with default values for all fields
-      ...prev, // Override with any existing values
-      // Ensure numeric fields are numbers
-      income: typeof prev.income === 'number' ? prev.income : 0,
-      expenses: typeof prev.expenses === 'number' ? prev.expenses : 0,
-      // Ensure string fields are strings
-      startLocation: prev.startLocation || '',
-      endLocation: prev.endLocation || '',
-      cargo: prev.cargo || '',
-      driver: prev.driver || '',
-      vehicle: prev.vehicle || '',
-      notes: prev.notes || '',
-      status: prev.status || 'planned',
-      clientId: prev.clientId || '',
-      date: prev.date || new Date().toISOString().split('T')[0]
-    }));
-  }, []);
+  // Используем функцию getSafeInitialState для безопасной инициализации
+  const [trip, setTrip] = useState<Trip>(getSafeInitialState(initialValues));
+  const [errors, setErrors] = useState<Partial<Record<keyof Trip, string>>>({});
   
   // Dropdown state
   const [openClientDropdown, setOpenClientDropdown] = useState(false);
   const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
+  
+  // Обновляем состояние, если initialValues изменились
+  useEffect(() => {
+    setTrip(getSafeInitialState(initialValues));
+  }, [initialValues]);
   
   const handleChange = (field: keyof Trip, value: any) => {
     setTrip(prev => ({ ...prev, [field]: value }));
@@ -78,6 +93,7 @@ const TripForm: React.FC<TripFormProps> = ({
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof Trip, string>> = {};
     
+    // Безопасно проверяем все поля
     if (!trip.date) {
       newErrors.date = 'Дата обязательна';
     }
@@ -86,28 +102,28 @@ const TripForm: React.FC<TripFormProps> = ({
       newErrors.clientId = 'Клиент обязателен';
     }
     
-    // Safely check string fields with optional chaining
-    if (!trip.startLocation?.trim()) {
+    // Используем безопасные проверки для строковых полей
+    if (!trip.startLocation || trip.startLocation.trim() === '') {
       newErrors.startLocation = 'Пункт отправления обязателен';
     }
     
-    if (!trip.endLocation?.trim()) {
+    if (!trip.endLocation || trip.endLocation.trim() === '') {
       newErrors.endLocation = 'Пункт назначения обязателен';
     }
     
-    if (!trip.cargo?.trim()) {
+    if (!trip.cargo || trip.cargo.trim() === '') {
       newErrors.cargo = 'Описание груза обязательно';
     }
     
-    if (!trip.driver?.trim()) {
+    if (!trip.driver || trip.driver.trim() === '') {
       newErrors.driver = 'Водитель обязателен';
     }
     
-    if (!trip.vehicle?.trim()) {
+    if (!trip.vehicle || trip.vehicle.trim() === '') {
       newErrors.vehicle = 'Транспортное средство обязательно';
     }
     
-    // Check numeric fields
+    // Проверяем числовые поля
     if (typeof trip.income !== 'number' || trip.income < 0) {
       newErrors.income = 'Доход не может быть отрицательным';
     }
@@ -121,8 +137,12 @@ const TripForm: React.FC<TripFormProps> = ({
   };
   
   const handleSubmit = () => {
+    // Перед валидацией убедимся, что все поля имеют правильные типы
+    const safeTrip = getSafeInitialState(trip);
+    setTrip(safeTrip);
+    
     if (validate()) {
-      onSubmit(trip);
+      onSubmit(safeTrip);
     }
   };
   
@@ -221,7 +241,7 @@ const TripForm: React.FC<TripFormProps> = ({
           setOpen={setOpenStatusDropdown}
           setValue={(callback) => {
             if (typeof callback === 'function') {
-              const newValue = callback(trip.status as string);
+              const newValue = callback(trip.status);
               handleChange('status', newValue);
             } else {
               handleChange('status', callback);
@@ -236,7 +256,7 @@ const TripForm: React.FC<TripFormProps> = ({
       
       <TextInput
         label="Доход (₽) *"
-        value={typeof trip.income === 'number' ? trip.income.toString() : '0'}
+        value={trip.income.toString()}
         onChangeText={(value) => handleChange('income', parseFloat(value) || 0)}
         style={styles.input}
         keyboardType="numeric"
@@ -246,7 +266,7 @@ const TripForm: React.FC<TripFormProps> = ({
       
       <TextInput
         label="Расходы (₽) *"
-        value={typeof trip.expenses === 'number' ? trip.expenses.toString() : '0'}
+        value={trip.expenses.toString()}
         onChangeText={(value) => handleChange('expenses', parseFloat(value) || 0)}
         style={styles.input}
         keyboardType="numeric"
