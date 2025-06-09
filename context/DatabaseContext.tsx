@@ -78,6 +78,32 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, [db, isSignedIn, basicLoading, loadData]);
   
+  // Trip History operations - moved up to avoid circular dependency
+  const getTripHistory = useCallback(async (tripId: string): Promise<TripHistory[]> => {
+    if (!db) return [];
+    
+    try {
+      const allHistory = await db.from('tripHistory').getAll();
+      return allHistory ? allHistory.filter(h => h.tripId === tripId) : [];
+    } catch (error) {
+      console.error('Error getting trip history:', error);
+      return [];
+    }
+  }, [db]);
+  
+  // Document operations - moved up to avoid circular dependency
+  const getDocuments = useCallback(async (tripId: string): Promise<Document[]> => {
+    if (!db) return [];
+    
+    try {
+      const allDocuments = await db.from('documents').getAll();
+      return allDocuments ? allDocuments.filter(d => d.tripId === tripId) : [];
+    } catch (error) {
+      console.error('Error getting documents:', error);
+      return [];
+    }
+  }, [db]);
+  
   // Client operations with useCallback
   const getClient = useCallback(async (id: string): Promise<Client | null> => {
     if (!db || !isSignedIn) return null;
@@ -246,57 +272,6 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       return false;
     }
   }, [db, getTripHistory, getDocuments]);
-  
-  // Trip History operations
-  const getTripHistory = useCallback((tripId: string): Promise<TripHistory[]> => {
-    if (!db) return [];
-    
-    try {
-      const allHistory = await db.from('tripHistory').getAll();
-      return allHistory ? allHistory.filter(h => h.tripId === tripId) : [];
-    } catch (error) {
-      console.error('Error getting trip history:', error);
-      return [];
-    }
-  }, [db]);
-  
-  // Document operations
-  const getDocuments = useCallback((tripId: string): Promise<Document[]> => {
-    if (!db) return [];
-    
-    try {
-      const allDocuments = await db.from('documents').getAll();
-      return allDocuments ? allDocuments.filter(d => d.tripId === tripId) : [];
-    } catch (error) {
-      console.error('Error getting documents:', error);
-      return [];
-    }
-  }, [db]);
-  
-  const addDocument = useCallback(async (document: Document): Promise<Document | null> => {
-    if (!db) return null;
-    
-    try {
-      return await db.from('documents').add(document);
-    } catch (error) {
-      console.error('Error adding document:', error);
-      Alert.alert('Ошибка', 'Не удалось добавить документ');
-      return null;
-    }
-  }, [db]);
-  
-  const deleteDocument = useCallback(async (id: string): Promise<boolean> => {
-    if (!db) return false;
-    
-    try {
-      await db.from('documents').delete(id);
-      return true;
-    } catch (error) {
-      console.error('Error deleting document:', error);
-      Alert.alert('Ошибка', 'Не удалось удалить документ');
-      return false;
-    }
-  }, [db]);
   
   // Filter operations with useCallback
   const filterTrips = useCallback((options: FilterOptions) => {
