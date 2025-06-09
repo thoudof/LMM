@@ -1,124 +1,131 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
-import { Card, Text, IconButton, Chip } from 'react-native-paper';
-import { Trip, Client } from '../types';
+import { StyleSheet, View, TouchableOpacity, Dimensions } from 'react-native';
+import { Card, Text, IconButton, Chip, Divider } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Trip } from '../types';
 import { formatDate } from '../utils/dateUtils';
 
 interface TripCardProps {
   trip: Trip;
-  client?: Client;
+  clientName: string;
   onPress: (trip: Trip) => void;
   onEdit: (trip: Trip) => void;
   onDelete: (trip: Trip) => void;
 }
 
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'planned':
-      return '#FFC107'; // Yellow
-    case 'in-progress':
-      return '#2196F3'; // Blue
-    case 'completed':
-      return '#4CAF50'; // Green
-    case 'cancelled':
-      return '#F44336'; // Red
-    default:
-      return '#9E9E9E'; // Grey
-  }
-};
-
-const getStatusText = (status: string): string => {
-  switch (status) {
-    case 'planned':
-      return 'Запланирован';
-    case 'in-progress':
-      return 'В пути';
-    case 'completed':
-      return 'Завершен';
-    case 'cancelled':
-      return 'Отменен';
-    default:
-      return 'Неизвестно';
-  }
-};
-
-const TripCard: React.FC<TripCardProps> = ({ trip, client, onPress, onEdit, onDelete }) => {
-  const statusColor = getStatusColor(trip.status);
-  const statusText = getStatusText(trip.status);
-  const profit = trip.income - trip.expenses;
+const TripCard: React.FC<TripCardProps> = ({ 
+  trip, 
+  clientName, 
+  onPress, 
+  onEdit, 
+  onDelete 
+}) => {
+  const windowWidth = Dimensions.get('window').width;
+  const isSmallScreen = windowWidth < 375;
+  
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'planned':
+        return '#FFC107'; // Yellow
+      case 'in-progress':
+        return '#2196F3'; // Blue
+      case 'completed':
+        return '#4CAF50'; // Green
+      case 'cancelled':
+        return '#F44336'; // Red
+      default:
+        return '#9E9E9E'; // Grey
+    }
+  };
+  
+  const getStatusText = (status: string): string => {
+    switch (status) {
+      case 'planned':
+        return 'Запланирован';
+      case 'in-progress':
+        return 'В пути';
+      case 'completed':
+        return 'Завершен';
+      case 'cancelled':
+        return 'Отменен';
+      default:
+        return 'Неизвестно';
+    }
+  };
+  
+  // Ensure income and expenses are numbers
+  const income = typeof trip.income === 'number' ? trip.income : 0;
+  const expenses = typeof trip.expenses === 'number' ? trip.expenses : 0;
+  const profit = income - expenses;
   
   return (
     <TouchableOpacity onPress={() => onPress(trip)}>
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.header}>
-            <Text variant="titleMedium" style={styles.title}>
-              {trip.startLocation} → {trip.endLocation}
-            </Text>
+            <View style={styles.titleContainer}>
+              <Text variant="titleMedium" style={styles.title}>
+                {trip.startLocation || 'Не указано'} → {trip.endLocation || 'Не указано'}
+              </Text>
+              <Text variant="bodySmall" style={styles.date}>{formatDate(trip.date)}</Text>
+            </View>
             <View style={styles.actions}>
               <IconButton
                 icon="pencil"
                 size={20}
                 onPress={() => onEdit(trip)}
+                iconColor="#2196F3"
               />
               <IconButton
                 icon="delete"
                 size={20}
                 onPress={() => onDelete(trip)}
+                iconColor="#F44336"
               />
             </View>
           </View>
           
-          <View style={styles.chipRow}>
+          <View style={styles.infoContainer}>
+            <View style={styles.infoRow}>
+              <MaterialCommunityIcons name="account-group" size={16} color="#757575" />
+              <Text variant="bodyMedium" style={styles.infoText}>
+                {clientName || 'Неизвестный клиент'}
+              </Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <MaterialCommunityIcons name="package-variant" size={16} color="#757575" />
+              <Text variant="bodyMedium" style={styles.infoText}>
+                {trip.cargo || 'Не указано'}
+              </Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <MaterialCommunityIcons name="account" size={16} color="#757575" />
+              <Text variant="bodyMedium" style={styles.infoText}>
+                {trip.driver || 'Не указано'}
+              </Text>
+            </View>
+          </View>
+          
+          <Divider style={styles.divider} />
+          
+          <View style={styles.footer}>
             <Chip 
-              style={[styles.statusChip, { backgroundColor: statusColor }]}
-              textStyle={{ color: 'white' }}
+              style={[styles.statusChip, { backgroundColor: getStatusColor(trip.status) }]}
+              textStyle={{ color: 'white', fontSize: isSmallScreen ? 10 : 12 }}
             >
-              {statusText}
+              {getStatusText(trip.status)}
             </Chip>
-            <Text variant="bodyMedium">{formatDate(trip.date)}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text variant="bodyMedium" style={styles.label}>Клиент:</Text>
-            <Text variant="bodyMedium">{client?.name || 'Неизвестно'}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text variant="bodyMedium" style={styles.label}>Груз:</Text>
-            <Text variant="bodyMedium">{trip.cargo}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text variant="bodyMedium" style={styles.label}>Водитель:</Text>
-            <Text variant="bodyMedium">{trip.driver}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text variant="bodyMedium" style={styles.label}>Транспорт:</Text>
-            <Text variant="bodyMedium">{trip.vehicle}</Text>
-          </View>
-          
-          <View style={styles.financialRow}>
-            <View style={styles.financialItem}>
-              <Text variant="bodySmall">Доход</Text>
-              <Text variant="bodyLarge" style={styles.income}>
-                {trip.income.toLocaleString()} ₽
-              </Text>
-            </View>
             
-            <View style={styles.financialItem}>
-              <Text variant="bodySmall">Расход</Text>
-              <Text variant="bodyLarge" style={styles.expense}>
-                {trip.expenses.toLocaleString()} ₽
-              </Text>
-            </View>
-            
-            <View style={styles.financialItem}>
-              <Text variant="bodySmall">Прибыль</Text>
+            <View style={styles.financialInfo}>
+              <Text variant="bodySmall" style={styles.profitLabel}>Прибыль:</Text>
               <Text 
-                variant="bodyLarge" 
-                style={[styles.profit, { color: profit >= 0 ? '#4CAF50' : '#F44336' }]}
+                variant="bodyMedium" 
+                style={[
+                  styles.profitValue, 
+                  { color: profit >= 0 ? '#4CAF50' : '#F44336' }
+                ]}
               >
                 {profit.toLocaleString()} ₽
               </Text>
@@ -135,58 +142,62 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 16,
     elevation: 2,
+    borderRadius: 12,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+  },
+  titleContainer: {
+    flex: 1,
   },
   title: {
     fontWeight: 'bold',
-    flex: 1,
+    color: '#2196F3',
+  },
+  date: {
+    color: '#757575',
   },
   actions: {
     flexDirection: 'row',
   },
-  chipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    justifyContent: 'space-between',
-  },
-  statusChip: {
-    height: 28,
+  infoContainer: {
+    marginTop: 8,
+    backgroundColor: '#f5f5f5',
+    padding: 8,
+    borderRadius: 8,
   },
   infoRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 2,
   },
-  label: {
-    fontWeight: 'bold',
-    marginRight: 8,
-    minWidth: 100,
+  infoText: {
+    marginLeft: 8,
+    flex: 1,
   },
-  financialRow: {
+  divider: {
+    marginVertical: 12,
+  },
+  footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  financialItem: {
     alignItems: 'center',
   },
-  income: {
-    color: '#2196F3',
-    fontWeight: 'bold',
+  statusChip: {
+    height: 28,
+    borderRadius: 14,
   },
-  expense: {
-    color: '#F44336',
-    fontWeight: 'bold',
+  financialInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  profit: {
+  profitLabel: {
+    marginRight: 4,
+    color: '#757575',
+  },
+  profitValue: {
     fontWeight: 'bold',
   },
 });

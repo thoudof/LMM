@@ -1,120 +1,128 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { NavigationContainer } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from 'react-native-paper';
+import { Dimensions, Platform } from 'react-native';
 
-// Screens
 import HomeScreen from '../screens/HomeScreen';
 import ClientsScreen from '../screens/ClientsScreen';
-import ClientDetailsScreen from '../screens/ClientDetailsScreen';
 import TripsScreen from '../screens/TripsScreen';
+import StatisticsScreen from '../screens/StatisticsScreen';
+import ClientDetailsScreen from '../screens/ClientDetailsScreen';
 import TripDetailsScreen from '../screens/TripDetailsScreen';
 import TripEditScreen from '../screens/TripEditScreen';
-import StatisticsScreen from '../screens/StatisticsScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
 
-// Stack navigators
-const HomeStack = createNativeStackNavigator();
-const ClientsStack = createNativeStackNavigator();
-const TripsStack = createNativeStackNavigator();
-const StatisticsStack = createNativeStackNavigator();
-
-// Tab navigator
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-// Home stack
-const HomeStackNavigator = () => {
+const ClientsStack = () => {
+  const theme = useTheme();
+  
   return (
-    <HomeStack.Navigator>
-      <HomeStack.Screen 
-        name="HomeScreen" 
-        component={HomeScreen} 
-        options={{ title: 'Главная' }}
-      />
-    </HomeStack.Navigator>
-  );
-};
-
-// Clients stack
-const ClientsStackNavigator = () => {
-  return (
-    <ClientsStack.Navigator>
-      <ClientsStack.Screen 
-        name="ClientsScreen" 
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: theme.colors.primary,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen 
+        name="ClientsList" 
         component={ClientsScreen} 
-        options={{ title: 'Контрагенты' }}
+        options={{ title: 'Контрагенты' }} 
       />
-      <ClientsStack.Screen 
+      <Stack.Screen 
         name="ClientDetails" 
         component={ClientDetailsScreen} 
-        options={{ title: 'Детали контрагента' }}
+        options={{ title: 'Детали контрагента' }} 
       />
-    </ClientsStack.Navigator>
+    </Stack.Navigator>
   );
 };
 
-// Trips stack
-const TripsStackNavigator = () => {
+const TripsStack = () => {
+  const theme = useTheme();
+  
   return (
-    <TripsStack.Navigator>
-      <TripsStack.Screen 
-        name="TripsScreen" 
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: theme.colors.primary,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen 
+        name="TripsList" 
         component={TripsScreen} 
-        options={{ title: 'Рейсы' }}
+        options={{ title: 'Рейсы' }} 
       />
-      <TripsStack.Screen 
+      <Stack.Screen 
         name="TripDetails" 
         component={TripDetailsScreen} 
-        options={{ title: 'Детали рейса' }}
+        options={{ title: 'Детали рейса' }} 
       />
-      <TripsStack.Screen 
+      <Stack.Screen 
         name="TripEdit" 
         component={TripEditScreen} 
-        options={{ title: 'Редактирование рейса' }}
+        options={({ route }) => ({ 
+          title: route.params?.tripId ? 'Редактирование рейса' : 'Новый рейс' 
+        })} 
       />
-      <TripsStack.Screen 
+      <Stack.Screen 
         name="Documents" 
         component={DocumentsScreen} 
-        options={{ title: 'Документы' }}
+        options={{ title: 'Документы' }} 
       />
-    </TripsStack.Navigator>
+    </Stack.Navigator>
   );
 };
 
-// Statistics stack
-const StatisticsStackNavigator = () => {
-  return (
-    <StatisticsStack.Navigator>
-      <StatisticsStack.Screen 
-        name="StatisticsScreen" 
-        component={StatisticsScreen} 
-        options={{ title: 'Статистика' }}
-      />
-    </StatisticsStack.Navigator>
-  );
-};
-
-// Main tab navigator
 const AppNavigator = () => {
+  const theme = useTheme();
+  const windowWidth = Dimensions.get('window').width;
+  const isSmallScreen = windowWidth < 375;
+  
   return (
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: '#2196F3',
-          tabBarInactiveTintColor: 'gray',
+          tabBarActiveTintColor: theme.colors.primary,
+          tabBarInactiveTintColor: '#757575',
           tabBarStyle: {
-            paddingBottom: 5,
-            paddingTop: 5,
+            height: Platform.OS === 'ios' ? 88 : 60,
+            paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+            paddingTop: 8,
           },
-          headerShown: false,
+          tabBarLabelStyle: {
+            fontSize: isSmallScreen ? 10 : 12,
+          },
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
         }}
       >
         <Tab.Screen 
           name="Home" 
-          component={HomeStackNavigator} 
+          component={HomeScreen} 
           options={{
-            tabBarLabel: 'Главная',
+            title: 'Главная',
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="home" color={color} size={size} />
             ),
@@ -122,9 +130,10 @@ const AppNavigator = () => {
         />
         <Tab.Screen 
           name="Clients" 
-          component={ClientsStackNavigator} 
+          component={ClientsStack} 
           options={{
-            tabBarLabel: 'Контрагенты',
+            title: 'Контрагенты',
+            headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="account-group" color={color} size={size} />
             ),
@@ -132,9 +141,10 @@ const AppNavigator = () => {
         />
         <Tab.Screen 
           name="Trips" 
-          component={TripsStackNavigator} 
+          component={TripsStack} 
           options={{
-            tabBarLabel: 'Рейсы',
+            title: 'Рейсы',
+            headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="truck" color={color} size={size} />
             ),
@@ -142,9 +152,9 @@ const AppNavigator = () => {
         />
         <Tab.Screen 
           name="Statistics" 
-          component={StatisticsStackNavigator} 
+          component={StatisticsScreen} 
           options={{
-            tabBarLabel: 'Статистика',
+            title: 'Статистика',
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="chart-bar" color={color} size={size} />
             ),

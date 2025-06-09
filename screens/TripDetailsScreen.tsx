@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, Alert } from 'react-native';
-import { Text, Card, Button, Divider, IconButton, Chip, List } from 'react-native-paper';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { StyleSheet, View, ScrollView, Alert, Dimensions, RefreshControl } from 'react-native';
+import { Text, Card, Button, Divider, IconButton, Chip, List, ActivityIndicator } from 'react-native-paper';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDatabase } from '../context/DatabaseContext';
 import { Trip, Client, TripHistory, Document } from '../types';
@@ -17,44 +17,59 @@ const TripDetailsScreen = () => {
   const [history, setHistory] = useState<TripHistory[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        // @ts-ignore
-        const tripId = route.params?.tripId;
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // @ts-ignore
+      const tripId = route.params?.tripId;
+      
+      if (tripId) {
+        const tripData = await getTrip(tripId);
         
-        if (tripId) {
-          const tripData = await getTrip(tripId);
+        if (tripData) {
+          setTrip(tripData);
           
-          if (tripData) {
-            setTrip(tripData);
-            
-            // Load client
-            if (tripData.clientId) {
-              const clientData = await getClient(tripData.clientId);
-              setClient(clientData);
-            }
-            
-            // Load history
-            const historyData = await getTripHistory(tripId);
-            setHistory(historyData);
-            
-            // Load documents
-            const documentsData = await getDocuments(tripId);
-            setDocuments(documentsData);
+          // Load client
+          if (tripData.clientId) {
+            const clientData = await getClient(tripData.clientId);
+            setClient(clientData);
           }
+          
+          // Load history
+          const historyData = await getTripHistory(tripId);
+          setHistory(historyData);
+          
+          // Load documents
+          const documentsData = await getDocuments(tripId);
+          setDocuments(documentsData);
+        } else {
+          // Trip not found
+          Alert.alert('Ошибка', 'Рейс не найден');
+          navigation.goBack();
         }
-      } catch (error) {
-        console.error('Error loading trip details:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-    
+    } catch (error) {
+      console.error('Error loading trip details:', error);
+      Alert.alert('Ошибка', 'Не удалось загрузить данные рейса');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [route.params, getTrip, getClient, getTripHistory, getDocuments, navigation]);
+  
+  // Load data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+  
+  const onRefresh = () => {
+    setRefreshing(true);
     loadData();
-  }, [route.params]);
+  };
   
   const getStatusColor = (status: string): string => {
     switch (status) {
@@ -121,6 +136,7 @@ const TripDetailsScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
         <Text>Загрузка данных...</Text>
       </View>
     );
@@ -130,6 +146,13 @@ const TripDetailsScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <Text>Рейс не найден</Text>
+        <Button 
+          mode="contained" 
+          onPress={() => navigation.goBack()}
+          style={{ marginTop: 16 }}
+        >
+          Вернуться назад
+        </Button>
       </View>
     );
   }
@@ -139,12 +162,20 @@ const TripDetailsScreen = () => {
   const expenses = typeof trip.expenses === 'number' ? trip.expenses : 0;
   const profit = income - expenses;
   
+  const windowWidth = Dimensions.get('window').width;
+  const isSmallScreen = windowWidth < 375;
+  
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <Card style={styles.card}>
         <Card.Content>
           <View style={styles.header}>
-            <Text variant="headlineMedium" style={styles.title}>
+            <Text variant={isSmallScreen ? "titleLarge" : "headlineMedium"} style={styles.title}>
               {trip.startLocation || 'Не указано'} → {trip.endLocation || 'Не указано'}
             </Text>
             <View style={styles.actions}>
@@ -152,11 +183,13 @@ const TripDetailsScreen = () => {
                 icon="pencil"
                 size={24}
                 onPress={handleEdit}
+                iconColor="#2196F3"
               />
               <IconButton
                 icon="delete"
                 size={24}
                 onPress={handleDelete}
+                iconColor="#F44336"
               />
             </View>
           </View>
@@ -168,7 +201,7 @@ const TripDetailsScreen = () => {
             >
               {getStatusText(trip.status || 'planned')}
             </Chip>
-            <Text variant="bodyLarge">{formatDate(trip.date)}</Text>
+            <Text variant="bodyLarge" style={styles.dateText}>{formatDate(trip.date)}</Text>
           </View>
           
           <Divider style={styles.divider} />
@@ -176,28 +209,28 @@ const TripDetailsScreen = () => {
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
               <Text variant="bodyMedium" style={styles.label}>Клиент:</Text>
-              <Text variant="bodyMedium">{client?.name || 'Неизвестно'}</Text>
+              <Text variant="bodyMedium" style={styles.value}>{client?.name || 'Неизвестно'}</Text>
             </View>
             
             <View style={styles.infoRow}>
               <Text variant="bodyMedium" style={styles.label}>Груз:</Text>
-              <Text variant="bodyMedium">{trip.cargo || 'Не указано'}</Text>
+              <Text variant="bodyMedium" style={styles.value}>{trip.cargo || 'Не указано'}</Text>
             </View>
             
             <View style={styles.infoRow}>
               <Text variant="bodyMedium" style={styles.label}>Водитель:</Text>
-              <Text variant="bodyMedium">{trip.driver || 'Не указано'}</Text>
+              <Text variant="bodyMedium" style={styles.value}>{trip.driver || 'Не указано'}</Text>
             </View>
             
             <View style={styles.infoRow}>
               <Text variant="bodyMedium" style={styles.label}>Транспорт:</Text>
-              <Text variant="bodyMedium">{trip.vehicle || 'Не указано'}</Text>
+              <Text variant="bodyMedium" style={styles.value}>{trip.vehicle || 'Не указано'}</Text>
             </View>
             
             {trip.notes && (
               <View style={styles.infoRow}>
                 <Text variant="bodyMedium" style={styles.label}>Примечания:</Text>
-                <Text variant="bodyMedium" style={styles.valueText}>{trip.notes}</Text>
+                <Text variant="bodyMedium" style={[styles.value, styles.valueText]}>{trip.notes}</Text>
               </View>
             )}
           </View>
@@ -210,14 +243,14 @@ const TripDetailsScreen = () => {
             <View style={styles.financialRow}>
               <View style={styles.financialItem}>
                 <Text variant="bodyMedium">Доход</Text>
-                <Text variant="headlineSmall" style={styles.incomeText}>
+                <Text variant={isSmallScreen ? "titleMedium" : "headlineSmall"} style={styles.incomeText}>
                   {income.toLocaleString()} ₽
                 </Text>
               </View>
               
               <View style={styles.financialItem}>
                 <Text variant="bodyMedium">Расходы</Text>
-                <Text variant="headlineSmall" style={styles.expenseText}>
+                <Text variant={isSmallScreen ? "titleMedium" : "headlineSmall"} style={styles.expenseText}>
                   {expenses.toLocaleString()} ₽
                 </Text>
               </View>
@@ -225,7 +258,7 @@ const TripDetailsScreen = () => {
               <View style={styles.financialItem}>
                 <Text variant="bodyMedium">Прибыль</Text>
                 <Text 
-                  variant="headlineSmall" 
+                  variant={isSmallScreen ? "titleMedium" : "headlineSmall"} 
                   style={profit >= 0 ? styles.profitText : styles.lossText}
                 >
                   {profit.toLocaleString()} ₽
@@ -244,8 +277,9 @@ const TripDetailsScreen = () => {
               mode="contained" 
               onPress={handleViewDocuments}
               icon="file-document"
+              style={styles.documentButton}
             >
-              Управление документами
+              {isSmallScreen ? "Документы" : "Управление документами"}
             </Button>
           </View>
           
@@ -257,12 +291,14 @@ const TripDetailsScreen = () => {
                   title={doc.name}
                   description={doc.type}
                   left={props => <List.Icon {...props} icon="file-document-outline" />}
+                  style={styles.documentItem}
                 />
               ))}
               {documents.length > 3 && (
                 <Button 
                   mode="text" 
                   onPress={handleViewDocuments}
+                  style={styles.showMoreButton}
                 >
                   Показать все ({documents.length})
                 </Button>
@@ -352,11 +388,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   card: {
     margin: 16,
     marginBottom: 8,
     elevation: 2,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -366,6 +405,7 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: 'bold',
     flex: 1,
+    color: '#2196F3',
   },
   actions: {
     flexDirection: 'row',
@@ -378,12 +418,18 @@ const styles = StyleSheet.create({
   },
   statusChip: {
     height: 28,
+    borderRadius: 14,
+  },
+  dateText: {
+    color: '#757575',
   },
   divider: {
     marginVertical: 16,
+    height: 1,
+    backgroundColor: '#e0e0e0',
   },
   infoSection: {
-    gap: 8,
+    gap: 12,
   },
   infoRow: {
     flexDirection: 'row',
@@ -392,6 +438,11 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: 'bold',
     minWidth: 120,
+    color: '#424242',
+  },
+  value: {
+    flex: 1,
+    color: '#212121',
   },
   valueText: {
     flex: 1,
@@ -399,6 +450,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: 'bold',
     marginBottom: 16,
+    color: '#2196F3',
   },
   financialSection: {
     marginBottom: 8,
@@ -406,47 +458,75 @@ const styles = StyleSheet.create({
   financialRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   financialItem: {
     alignItems: 'center',
     minWidth: '30%',
+    marginBottom: 8,
   },
   incomeText: {
     color: '#2196F3',
+    fontWeight: 'bold',
   },
   expenseText: {
     color: '#F44336',
+    fontWeight: 'bold',
   },
   profitText: {
     color: '#4CAF50',
+    fontWeight: 'bold',
   },
   lossText: {
     color: '#F44336',
+    fontWeight: 'bold',
   },
   documentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  documentButton: {
+    marginTop: 8,
+  },
+  documentItem: {
+    borderRadius: 8,
+    marginVertical: 4,
+    backgroundColor: '#f9f9f9',
+  },
+  showMoreButton: {
+    alignSelf: 'center',
+    marginTop: 8,
   },
   emptyText: {
     textAlign: 'center',
     marginVertical: 16,
     fontStyle: 'italic',
+    color: '#757575',
   },
   historyItem: {
-    marginBottom: 8,
+    marginBottom: 12,
+    backgroundColor: '#f9f9f9',
+    padding: 8,
+    borderRadius: 8,
   },
   historyDate: {
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 8,
+    color: '#424242',
   },
   fieldChange: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   fieldName: {
     marginRight: 8,
     fontWeight: 'bold',
+    color: '#424242',
   },
   oldValue: {
     color: '#F44336',

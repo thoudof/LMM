@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { useBasic } from '@basictech/expo';
 import { Alert } from 'react-native';
 import { AppSchema, Client, Trip, TripHistory, Document, FilterOptions } from '../types';
@@ -46,8 +46,8 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Load initial data
-  const loadData = async () => {
+  // Load initial data with useCallback for better performance
+  const loadData = useCallback(async () => {
     if (!db || !isSignedIn) return;
     
     setIsLoading(true);
@@ -64,7 +64,7 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [db, isSignedIn]);
   
   useEffect(() => {
     if (db && isSignedIn && !basicLoading) {
@@ -76,10 +76,10 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       setFilteredTrips([]);
       setIsLoading(false);
     }
-  }, [db, isSignedIn, basicLoading]);
+  }, [db, isSignedIn, basicLoading, loadData]);
   
-  // Client operations
-  const getClient = async (id: string): Promise<Client | null> => {
+  // Client operations with useCallback
+  const getClient = useCallback(async (id: string): Promise<Client | null> => {
     if (!db || !isSignedIn) return null;
     
     try {
@@ -88,9 +88,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.error('Error getting client:', error);
       return null;
     }
-  };
+  }, [db, isSignedIn]);
   
-  const addClient = async (client: Client): Promise<Client | null> => {
+  const addClient = useCallback(async (client: Client): Promise<Client | null> => {
     if (!db || !isSignedIn) return null;
     
     try {
@@ -104,9 +104,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       Alert.alert('Ошибка', 'Не удалось добавить контрагента');
       return null;
     }
-  };
+  }, [db, isSignedIn]);
   
-  const updateClient = async (id: string, client: Client): Promise<Client | null> => {
+  const updateClient = useCallback(async (id: string, client: Client): Promise<Client | null> => {
     if (!db) return null;
     
     try {
@@ -120,9 +120,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       Alert.alert('Ошибка', 'Не удалось обновить контрагента');
       return null;
     }
-  };
+  }, [db]);
   
-  const deleteClient = async (id: string): Promise<boolean> => {
+  const deleteClient = useCallback(async (id: string): Promise<boolean> => {
     if (!db) return false;
     
     try {
@@ -134,10 +134,10 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       Alert.alert('Ошибка', 'Не удалось удалить контрагента');
       return false;
     }
-  };
+  }, [db]);
   
   // Trip operations
-  const getTrip = async (id: string): Promise<Trip | null> => {
+  const getTrip = useCallback(async (id: string): Promise<Trip | null> => {
     if (!db) return null;
     
     try {
@@ -146,9 +146,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.error('Error getting trip:', error);
       return null;
     }
-  };
+  }, [db]);
   
-  const addTrip = async (trip: Trip): Promise<Trip | null> => {
+  const addTrip = useCallback(async (trip: Trip): Promise<Trip | null> => {
     if (!db) return null;
     
     try {
@@ -163,9 +163,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       Alert.alert('Ошибка', 'Не удалось добавить рейс');
       return null;
     }
-  };
+  }, [db]);
   
-  const updateTrip = async (id: string, trip: Trip, oldTrip: Trip): Promise<Trip | null> => {
+  const updateTrip = useCallback(async (id: string, trip: Trip, oldTrip: Trip): Promise<Trip | null> => {
     if (!db) return null;
     
     try {
@@ -210,9 +210,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       Alert.alert('Ошибка', 'Не удалось обновить рейс');
       return null;
     }
-  };
+  }, [db]);
   
-  const deleteTrip = async (id: string): Promise<boolean> => {
+  const deleteTrip = useCallback(async (id: string): Promise<boolean> => {
     if (!db) return false;
     
     try {
@@ -245,10 +245,10 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       Alert.alert('Ошибка', 'Не удалось удалить рейс');
       return false;
     }
-  };
+  }, [db, getTripHistory, getDocuments]);
   
   // Trip History operations
-  const getTripHistory = async (tripId: string): Promise<TripHistory[]> => {
+  const getTripHistory = useCallback((tripId: string): Promise<TripHistory[]> => {
     if (!db) return [];
     
     try {
@@ -258,10 +258,10 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.error('Error getting trip history:', error);
       return [];
     }
-  };
+  }, [db]);
   
   // Document operations
-  const getDocuments = async (tripId: string): Promise<Document[]> => {
+  const getDocuments = useCallback((tripId: string): Promise<Document[]> => {
     if (!db) return [];
     
     try {
@@ -271,9 +271,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.error('Error getting documents:', error);
       return [];
     }
-  };
+  }, [db]);
   
-  const addDocument = async (document: Document): Promise<Document | null> => {
+  const addDocument = useCallback(async (document: Document): Promise<Document | null> => {
     if (!db) return null;
     
     try {
@@ -283,9 +283,9 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       Alert.alert('Ошибка', 'Не удалось добавить документ');
       return null;
     }
-  };
+  }, [db]);
   
-  const deleteDocument = async (id: string): Promise<boolean> => {
+  const deleteDocument = useCallback(async (id: string): Promise<boolean> => {
     if (!db) return false;
     
     try {
@@ -296,52 +296,50 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       Alert.alert('Ошибка', 'Не удалось удалить документ');
       return false;
     }
-  };
+  }, [db]);
   
-  // Filter operations
-  const filterTrips = (options: FilterOptions) => {
-    let filtered = [...trips];
-    
-    if (options.startDate) {
-      filtered = filtered.filter(trip => trip.date >= options.startDate!);
-    }
-    
-    if (options.endDate) {
-      filtered = filtered.filter(trip => trip.date <= options.endDate!);
-    }
-    
-    if (options.clientId) {
-      filtered = filtered.filter(trip => trip.clientId === options.clientId);
-    }
-    
-    if (options.startLocation) {
-      filtered = filtered.filter(trip => 
-        trip.startLocation.toLowerCase().includes(options.startLocation!.toLowerCase())
-      );
-    }
-    
-    if (options.endLocation) {
-      filtered = filtered.filter(trip => 
-        trip.endLocation.toLowerCase().includes(options.endLocation!.toLowerCase())
-      );
-    }
-    
-    if (options.status) {
-      filtered = filtered.filter(trip => trip.status === options.status);
-    }
-    
-    setFilteredTrips(filtered);
-  };
+  // Filter operations with useCallback
+  const filterTrips = useCallback((options: FilterOptions) => {
+    setFilteredTrips(trips.filter(trip => {
+      let match = true;
+      
+      if (options.startDate && trip.date < options.startDate) {
+        match = false;
+      }
+      
+      if (options.endDate && trip.date > options.endDate) {
+        match = false;
+      }
+      
+      if (options.clientId && trip.clientId !== options.clientId) {
+        match = false;
+      }
+      
+      if (options.startLocation && !trip.startLocation.toLowerCase().includes(options.startLocation.toLowerCase())) {
+        match = false;
+      }
+      
+      if (options.endLocation && !trip.endLocation.toLowerCase().includes(options.endLocation.toLowerCase())) {
+        match = false;
+      }
+      
+      if (options.status && trip.status !== options.status) {
+        match = false;
+      }
+      
+      return match;
+    }));
+  }, [trips]);
   
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilteredTrips(trips);
-  };
+  }, [trips]);
   
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     await loadData();
-  };
+  }, [loadData]);
   
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       await signout();
       // Data will be reset in the useEffect when isSignedIn changes
@@ -349,9 +347,10 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.error('Error signing out:', error);
       Alert.alert('Ошибка', 'Не удалось выйти из системы');
     }
-  };
+  }, [signout]);
   
-  const value = {
+  // Use useMemo for the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     clients,
     getClient,
     addClient,
@@ -377,7 +376,12 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
     isSignedIn,
     refreshData,
     signOut
-  };
+  }), [
+    clients, getClient, addClient, updateClient, deleteClient,
+    trips, filteredTrips, getTrip, addTrip, updateTrip, deleteTrip, filterTrips, clearFilters,
+    getTripHistory, getDocuments, addDocument, deleteDocument,
+    isLoading, isSignedIn, refreshData, signOut
+  ]);
   
   return (
     <DatabaseContext.Provider value={value}>

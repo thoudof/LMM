@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { StyleSheet, View, ScrollView, Dimensions, Platform } from 'react-native';
 import { TextInput, Button, Text, HelperText } from 'react-native-paper';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Trip, TripStatus } from '../types';
 import { useDatabase } from '../context/DatabaseContext';
-
-interface TripFormProps {
-  initialValues?: Trip | null;
-  onSubmit: (trip: Trip) => void;
-  onCancel: () => void;
-}
 
 // Создаем функцию для получения безопасного начального состояния
 const getSafeInitialState = (initialValues?: Trip | null): Trip => {
@@ -75,6 +69,10 @@ const TripForm: React.FC<TripFormProps> = ({
   // Dropdown state
   const [openClientDropdown, setOpenClientDropdown] = useState(false);
   const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
+  
+  // Get screen dimensions for responsive design
+  const windowWidth = Dimensions.get('window').width;
+  const isSmallScreen = windowWidth < 375;
   
   // Обновляем состояние, если initialValues изменились
   useEffect(() => {
@@ -154,150 +152,202 @@ const TripForm: React.FC<TripFormProps> = ({
   
   return (
     <ScrollView style={styles.container}>
-      <TextInput
-        label="Дата *"
-        value={trip.date}
-        onChangeText={(value) => handleChange('date', value)}
-        style={styles.input}
-        error={!!errors.date}
-        placeholder="ГГГГ-ММ-ДД"
-      />
-      {errors.date && <HelperText type="error">{errors.date}</HelperText>}
-      
-      <Text style={styles.dropdownLabel}>Клиент *</Text>
-      <View style={styles.dropdownContainer}>
-        <DropDownPicker
-          open={openClientDropdown}
-          value={trip.clientId}
-          items={clientOptions}
-          setOpen={setOpenClientDropdown}
-          setValue={(callback) => {
-            if (typeof callback === 'function') {
-              const newValue = callback(trip.clientId);
-              handleChange('clientId', newValue);
-            } else {
-              handleChange('clientId', callback);
-            }
-          }}
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownList}
-          placeholder="Выберите клиента"
-          listMode="SCROLLVIEW"
+      <View style={styles.formContainer}>
+        <TextInput
+          label="Дата *"
+          value={trip.date}
+          onChangeText={(value) => handleChange('date', value)}
+          style={styles.input}
+          error={!!errors.date}
+          placeholder="ГГГГ-ММ-ДД"
+          mode="outlined"
+          outlineColor="#ccc"
+          activeOutlineColor="#2196F3"
         />
-      </View>
-      {errors.clientId && <HelperText type="error">{errors.clientId}</HelperText>}
-      
-      <TextInput
-        label="Пункт отправления *"
-        value={trip.startLocation}
-        onChangeText={(value) => handleChange('startLocation', value)}
-        style={styles.input}
-        error={!!errors.startLocation}
-      />
-      {errors.startLocation && <HelperText type="error">{errors.startLocation}</HelperText>}
-      
-      <TextInput
-        label="Пункт назначения *"
-        value={trip.endLocation}
-        onChangeText={(value) => handleChange('endLocation', value)}
-        style={styles.input}
-        error={!!errors.endLocation}
-      />
-      {errors.endLocation && <HelperText type="error">{errors.endLocation}</HelperText>}
-      
-      <TextInput
-        label="Груз *"
-        value={trip.cargo}
-        onChangeText={(value) => handleChange('cargo', value)}
-        style={styles.input}
-        error={!!errors.cargo}
-      />
-      {errors.cargo && <HelperText type="error">{errors.cargo}</HelperText>}
-      
-      <TextInput
-        label="Водитель *"
-        value={trip.driver}
-        onChangeText={(value) => handleChange('driver', value)}
-        style={styles.input}
-        error={!!errors.driver}
-      />
-      {errors.driver && <HelperText type="error">{errors.driver}</HelperText>}
-      
-      <TextInput
-        label="Транспортное средство *"
-        value={trip.vehicle}
-        onChangeText={(value) => handleChange('vehicle', value)}
-        style={styles.input}
-        error={!!errors.vehicle}
-      />
-      {errors.vehicle && <HelperText type="error">{errors.vehicle}</HelperText>}
-      
-      <Text style={styles.dropdownLabel}>Статус *</Text>
-      <View style={styles.dropdownContainer}>
-        <DropDownPicker
-          open={openStatusDropdown}
-          value={trip.status}
-          items={statusOptions}
-          setOpen={setOpenStatusDropdown}
-          setValue={(callback) => {
-            if (typeof callback === 'function') {
-              const newValue = callback(trip.status);
-              handleChange('status', newValue);
-            } else {
-              handleChange('status', callback);
-            }
-          }}
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownList}
-          placeholder="Выберите статус"
-          listMode="SCROLLVIEW"
+        {errors.date && <HelperText type="error">{errors.date}</HelperText>}
+        
+        <Text style={styles.dropdownLabel}>Клиент *</Text>
+        <View style={[styles.dropdownContainer, { zIndex: 3000 }]}>
+          <DropDownPicker
+            open={openClientDropdown}
+            value={trip.clientId}
+            items={clientOptions}
+            setOpen={setOpenClientDropdown}
+            setValue={(callback) => {
+              if (typeof callback === 'function') {
+                const newValue = callback(trip.clientId);
+                handleChange('clientId', newValue);
+              } else {
+                handleChange('clientId', callback);
+              }
+            }}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownList}
+            placeholder="Выберите клиента"
+            listMode="SCROLLVIEW"
+            maxHeight={200}
+          />
+        </View>
+        {errors.clientId && <HelperText type="error">{errors.clientId}</HelperText>}
+        
+        <View style={styles.rowContainer}>
+          <View style={styles.halfInput}>
+            <TextInput
+              label="Пункт отправления *"
+              value={trip.startLocation}
+              onChangeText={(value) => handleChange('startLocation', value)}
+              style={styles.input}
+              error={!!errors.startLocation}
+              mode="outlined"
+              outlineColor="#ccc"
+              activeOutlineColor="#2196F3"
+            />
+            {errors.startLocation && <HelperText type="error">{errors.startLocation}</HelperText>}
+          </View>
+          
+          <View style={styles.halfInput}>
+            <TextInput
+              label="Пункт назначения *"
+              value={trip.endLocation}
+              onChangeText={(value) => handleChange('endLocation', value)}
+              style={styles.input}
+              error={!!errors.endLocation}
+              mode="outlined"
+              outlineColor="#ccc"
+              activeOutlineColor="#2196F3"
+            />
+            {errors.endLocation && <HelperText type="error">{errors.endLocation}</HelperText>}
+          </View>
+        </View>
+        
+        <TextInput
+          label="Груз *"
+          value={trip.cargo}
+          onChangeText={(value) => handleChange('cargo', value)}
+          style={styles.input}
+          error={!!errors.cargo}
+          mode="outlined"
+          outlineColor="#ccc"
+          activeOutlineColor="#2196F3"
         />
-      </View>
-      
-      <TextInput
-        label="Доход (₽) *"
-        value={trip.income.toString()}
-        onChangeText={(value) => handleChange('income', parseFloat(value) || 0)}
-        style={styles.input}
-        keyboardType="numeric"
-        error={!!errors.income}
-      />
-      {errors.income && <HelperText type="error">{errors.income}</HelperText>}
-      
-      <TextInput
-        label="Расходы (₽) *"
-        value={trip.expenses.toString()}
-        onChangeText={(value) => handleChange('expenses', parseFloat(value) || 0)}
-        style={styles.input}
-        keyboardType="numeric"
-        error={!!errors.expenses}
-      />
-      {errors.expenses && <HelperText type="error">{errors.expenses}</HelperText>}
-      
-      <TextInput
-        label="Примечания"
-        value={trip.notes}
-        onChangeText={(value) => handleChange('notes', value)}
-        style={styles.input}
-        multiline
-        numberOfLines={3}
-      />
-      
-      <View style={styles.buttonContainer}>
-        <Button 
-          mode="outlined" 
-          onPress={onCancel} 
-          style={styles.button}
-        >
-          Отмена
-        </Button>
-        <Button 
-          mode="contained" 
-          onPress={handleSubmit} 
-          style={styles.button}
-        >
-          Сохранить
-        </Button>
+        {errors.cargo && <HelperText type="error">{errors.cargo}</HelperText>}
+        
+        <View style={styles.rowContainer}>
+          <View style={styles.halfInput}>
+            <TextInput
+              label="Водитель *"
+              value={trip.driver}
+              onChangeText={(value) => handleChange('driver', value)}
+              style={styles.input}
+              error={!!errors.driver}
+              mode="outlined"
+              outlineColor="#ccc"
+              activeOutlineColor="#2196F3"
+            />
+            {errors.driver && <HelperText type="error">{errors.driver}</HelperText>}
+          </View>
+          
+          <View style={styles.halfInput}>
+            <TextInput
+              label="Транспорт *"
+              value={trip.vehicle}
+              onChangeText={(value) => handleChange('vehicle', value)}
+              style={styles.input}
+              error={!!errors.vehicle}
+              mode="outlined"
+              outlineColor="#ccc"
+              activeOutlineColor="#2196F3"
+            />
+            {errors.vehicle && <HelperText type="error">{errors.vehicle}</HelperText>}
+          </View>
+        </View>
+        
+        <Text style={styles.dropdownLabel}>Статус *</Text>
+        <View style={[styles.dropdownContainer, { zIndex: 2000 }]}>
+          <DropDownPicker
+            open={openStatusDropdown}
+            value={trip.status}
+            items={statusOptions}
+            setOpen={setOpenStatusDropdown}
+            setValue={(callback) => {
+              if (typeof callback === 'function') {
+                const newValue = callback(trip.status);
+                handleChange('status', newValue);
+              } else {
+                handleChange('status', callback);
+              }
+            }}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownList}
+            placeholder="Выберите статус"
+            listMode="SCROLLVIEW"
+            maxHeight={200}
+          />
+        </View>
+        
+        <View style={styles.rowContainer}>
+          <View style={styles.halfInput}>
+            <TextInput
+              label="Доход (₽) *"
+              value={trip.income.toString()}
+              onChangeText={(value) => handleChange('income', parseFloat(value) || 0)}
+              style={styles.input}
+              keyboardType="numeric"
+              error={!!errors.income}
+              mode="outlined"
+              outlineColor="#ccc"
+              activeOutlineColor="#2196F3"
+            />
+            {errors.income && <HelperText type="error">{errors.income}</HelperText>}
+          </View>
+          
+          <View style={styles.halfInput}>
+            <TextInput
+              label="Расходы (₽) *"
+              value={trip.expenses.toString()}
+              onChangeText={(value) => handleChange('expenses', parseFloat(value) || 0)}
+              style={styles.input}
+              keyboardType="numeric"
+              error={!!errors.expenses}
+              mode="outlined"
+              outlineColor="#ccc"
+              activeOutlineColor="#2196F3"
+            />
+            {errors.expenses && <HelperText type="error">{errors.expenses}</HelperText>}
+          </View>
+        </View>
+        
+        <TextInput
+          label="Примечания"
+          value={trip.notes}
+          onChangeText={(value) => handleChange('notes', value)}
+          style={styles.input}
+          multiline
+          numberOfLines={3}
+          mode="outlined"
+          outlineColor="#ccc"
+          activeOutlineColor="#2196F3"
+        />
+        
+        <View style={styles.buttonContainer}>
+          <Button 
+            mode="outlined" 
+            onPress={onCancel} 
+            style={styles.button}
+            buttonColor="#fff"
+            textColor="#2196F3"
+          >
+            Отмена
+          </Button>
+          <Button 
+            mode="contained" 
+            onPress={handleSubmit} 
+            style={styles.button}
+            buttonColor="#2196F3"
+          >
+            Сохранить
+          </Button>
+        </View>
       </View>
     </ScrollView>
   );
@@ -305,15 +355,21 @@ const TripForm: React.FC<TripFormProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  formContainer: {
     padding: 16,
   },
   input: {
     marginBottom: 16,
+    backgroundColor: '#fff',
   },
   dropdownLabel: {
     fontSize: 12,
     marginBottom: 4,
     color: '#666',
+    paddingLeft: 4,
   },
   dropdownContainer: {
     marginBottom: 16,
@@ -322,9 +378,25 @@ const styles = StyleSheet.create({
   dropdown: {
     borderColor: '#ccc',
     borderRadius: 4,
+    backgroundColor: '#fff',
   },
   dropdownList: {
     borderColor: '#ccc',
+    backgroundColor: '#fff',
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+  halfInput: {
+    width: '48%',
+    ...Platform.select({
+      web: {
+        minWidth: 150,
+      },
+      default: {}
+    }),
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -335,6 +407,8 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '48%',
+    borderRadius: 8,
+    paddingVertical: 6,
   },
 });
 
