@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, FlatList, Alert, Modal, Dimensions, RefreshControl } from 'react-native';
 import { Text, FAB, Button, TextInput, ActivityIndicator, SegmentedButtons, Divider, Surface } from 'react-native-paper';
-import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import * as ReactNavigation from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDatabase } from '../context/DatabaseContext';
 import { Document, DocumentType } from '../types';
@@ -51,7 +52,7 @@ const DocumentsScreen = () => {
     }
   };
   
-  useFocusEffect(
+  ReactNavigation.useFocusEffect(
     React.useCallback(() => {
       loadDocuments();
     }, [route.params])
