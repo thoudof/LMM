@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useFocusEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, FlatList, Alert, Modal, Dimensions, RefreshControl } from 'react-native';
 import { Text, FAB, Button, TextInput, ActivityIndicator, SegmentedButtons, Divider, Surface } from 'react-native-paper';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
