@@ -104,6 +104,32 @@ export const DatabaseProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, [db]);
   
+  const addDocument = useCallback(async (document: Document): Promise<Document | null> => {
+    if (!db) return null;
+    
+    try {
+      const newDocument = await db.from('documents').add(document);
+      return newDocument;
+    } catch (error) {
+      console.error('Error adding document:', error);
+      Alert.alert('Ошибка', 'Не удалось добавить документ');
+      return null;
+    }
+  }, [db]);
+  
+  const deleteDocument = useCallback(async (id: string): Promise<boolean> => {
+    if (!db) return false;
+    
+    try {
+      await db.from('documents').delete(id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      Alert.alert('Ошибка', 'Не удалось удалить документ');
+      return false;
+    }
+  }, [db]);
+  
   // Client operations with useCallback
   const getClient = useCallback(async (id: string): Promise<Client | null> => {
     if (!db || !isSignedIn) return null;
@@ -372,3 +398,7 @@ export const useDatabase = () => {
   }
   return context;
 };
+
+export default DatabaseProvider;
+
+}
